@@ -1,6 +1,12 @@
 package de.ritter.deconz.api;
 
-public class Senors {
+import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
+import de.ritter.deconz.rest.SensorDeserializer;
+import lombok.Data;
+
+@Data
+@JsonDeserialize(using = SensorDeserializer.class)
+public class Sensors {
 
 
     //The name of the sensor
