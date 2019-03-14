@@ -10,6 +10,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
+import java.util.Collection;
 import java.util.List;
 
 @Slf4j
@@ -34,7 +35,7 @@ public class SensorsApi {
 
         log.debug("sensors response {}", result);
 
-        List<Sensors> sensorsList = (List<Sensors>) new ObjectMapper().readValue(result, Sensors.class);
+        Collection<Sensors> sensorsList = (List<Sensors>) new ObjectMapper().readValue(result, Sensors.class);
 
         log.info("received sensors {}", sensorsList);
 

@@ -16,7 +16,7 @@ import java.util.*;
 import java.util.function.Consumer;
 
 @Slf4j
-public class SensorDeserializer extends StdDeserializer<List<Sensors>> {
+public class SensorDeserializer extends StdDeserializer<Collection<Sensors>> {
 
     public SensorDeserializer() {
         this(null);
@@ -27,22 +27,21 @@ public class SensorDeserializer extends StdDeserializer<List<Sensors>> {
     }
 
     @Override
-    public List<Sensors> deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
+    public Collection<Sensors> deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
 
-        List<Sensors> sensorsList = new ArrayList<>();
+        Map<String, Sensors> sensorMap = new HashMap<>();
 
         JsonNode node = jsonParser.getCodec().readTree(jsonParser);
 
-        for (Iterator<JsonNode> it = node.elements(); it.hasNext();) {
+        for (Iterator<JsonNode> it = node.elements(); it.hasNext(); ) {
 
             Iterator<Map.Entry<String, JsonNode>> nodeMap = it.next().fields();
 
-            Sensors sensor = new Sensors();
+            Sensors sensor = getSensorByUniqueId(sensorMap, nodeMap);
 
             nodeMap.forEachRemaining(new Consumer<Map.Entry<String, JsonNode>>() {
                 @Override
                 public void accept(Map.Entry<String, JsonNode> stringJsonNodeEntry) {
-
 
                     String key = stringJsonNodeEntry.getKey();
 
@@ -78,10 +77,41 @@ public class SensorDeserializer extends StdDeserializer<List<Sensors>> {
                 }
             });
 
-            sensorsList.add(sensor);
+            sensorMap.put(sensor.getUniqueid(), sensor);
 
         }
 
-        return sensorsList;
+        return sensorMap.values();
     }
+
+    private Sensors getSensorByUniqueId( Map<String, Sensors> sensorMap, Iterator<Map.Entry<String, JsonNode>> nodeMap) {
+
+       final Sensors[] currentSensor = new Sensors[1];
+
+        nodeMap.forEachRemaining(new Consumer<Map.Entry<String, JsonNode>>() {
+            @Override
+            public void accept(Map.Entry<String, JsonNode> stringJsonNodeEntry) {
+
+                String key = stringJsonNodeEntry.getKey();
+
+                if ("uniqueid".equals(key)) {
+
+                    String uniqueid = stringJsonNodeEntry.getValue().toString();
+
+                    currentSensor[0] = sensorMap.get(uniqueid);
+
+                    if (null == currentSensor[0]) {
+                        currentSensor[0] = new Sensors();
+                        sensorMap.put(uniqueid, currentSensor[0])
+                    }
+                    currentSensor[0].setUniqueid(stringJsonNodeEntry.getValue().toString());
+
+                }
+
+            }
+
+        });
+        return currentSensor[0];
+    }
+
 }
