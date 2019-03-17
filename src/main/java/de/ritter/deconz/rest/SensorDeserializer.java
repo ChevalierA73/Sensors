@@ -84,6 +84,12 @@ public class SensorDeserializer extends StdDeserializer<Collection<Sensors>> {
         return sensorMap.values();
     }
 
+    /**
+     * getSensorByUniqueId
+     * @param sensorMap
+     * @param nodeMap
+     * @return
+     */
     private Sensors getSensorByUniqueId( Map<String, Sensors> sensorMap, Iterator<Map.Entry<String, JsonNode>> nodeMap) {
 
        final Sensors[] currentSensor = new Sensors[1];
@@ -102,7 +108,7 @@ public class SensorDeserializer extends StdDeserializer<Collection<Sensors>> {
 
                     if (null == currentSensor[0]) {
                         currentSensor[0] = new Sensors();
-                        sensorMap.put(uniqueid, currentSensor[0])
+                        sensorMap.put(uniqueid, currentSensor[0]);
                     }
                     currentSensor[0].setUniqueid(stringJsonNodeEntry.getValue().toString());
 
