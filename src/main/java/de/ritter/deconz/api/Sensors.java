@@ -25,7 +25,10 @@ public class Sensors {
     private String uniqueid;
 
     // The manufacturer name of the sensor. required
-    private  String manufacturername;
+    private String manufacturername;
+
+    // etag
+    private String etag;
 
     // The state of the sensor (see: supported sensor types and its states). optional
     private State state;

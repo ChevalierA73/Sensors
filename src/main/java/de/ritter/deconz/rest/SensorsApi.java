@@ -35,7 +35,7 @@ public class SensorsApi {
 
         log.debug("sensors response {}", result);
 
-        Collection<Sensors> sensorsList = (List<Sensors>) new ObjectMapper().readValue(result, Sensors.class);
+        Collection<Sensors> sensorsList = (Collection<Sensors>) new ObjectMapper().readValue(result, Sensors.class);
 
         log.info("received sensors {}", sensorsList);
 

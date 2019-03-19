@@ -29,95 +29,70 @@ public class SensorDeserializer extends StdDeserializer<Collection<Sensors>> {
     @Override
     public Collection<Sensors> deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
 
-        Map<String, Sensors> sensorMap = new HashMap<>();
+       final Map<String, Sensors> sensorMap = new HashMap<>();
 
         JsonNode node = jsonParser.getCodec().readTree(jsonParser);
 
         for (Iterator<JsonNode> it = node.elements(); it.hasNext(); ) {
 
-            Iterator<Map.Entry<String, JsonNode>> nodeMap = it.next().fields();
+            JsonNode jsonNode = it.next();
 
-            Sensors sensor = getSensorByUniqueId(sensorMap, nodeMap);
+            String name = jsonNode.get("name").asText();
 
-            nodeMap.forEachRemaining(new Consumer<Map.Entry<String, JsonNode>>() {
-                @Override
-                public void accept(Map.Entry<String, JsonNode> stringJsonNodeEntry) {
+            if (it.hasNext()) {
 
-                    String key = stringJsonNodeEntry.getKey();
+                Iterator<Map.Entry<String, JsonNode>> nodeMap = it.next().fields();
 
-                    try {
+                nodeMap.forEachRemaining(new Consumer<Map.Entry<String, JsonNode>>() {
+                    @Override
+                    public void accept(Map.Entry<String, JsonNode> stringJsonNodeEntry) {
 
-                        if ("config".equals(key)) {
-                            sensor.setConfig(new ObjectMapper().readValue(stringJsonNodeEntry.getValue().toString(), Config.class));
+                        Sensors sensors = sensorMap.get(name);
 
-                        } else if ("name".equals(key)) {
-
-                            sensor.setName(stringJsonNodeEntry.getValue().toString());
-
-                        } else if ("manufacturername".equals(key)) {
-
-                            sensor.setManufacturername(stringJsonNodeEntry.getValue().toString());
-
-                        } else if ("modelid".equals(key)) {
-
-                            sensor.setModelid(stringJsonNodeEntry.getValue().toString());
-
-                        } else if ("state".equals(key)) {
-
-                            sensor.setState(new ObjectMapper().readValue(stringJsonNodeEntry.getValue().toString(), State.class));
-
+                        if (null == sensors) {
+                            sensors = new Sensors();
+                            sensors.setName(name);
+                            sensorMap.put(name, sensors);
                         }
 
+                        String key = stringJsonNodeEntry.getKey();
 
-                    } catch (IOException e) {
-                        log.error("could not desirialize {} {}", node.toString(), e.getMessage());
-                        e.printStackTrace();
+                        try {
+
+                            if ("config".equals(key)) {
+                                sensors.setConfig(new ObjectMapper().readValue(stringJsonNodeEntry.getValue().toString(), Config.class));
+
+                            } else if ("manufacturername".equals(key)) {
+
+                                sensors.setManufacturername(stringJsonNodeEntry.getValue().toString());
+
+                            } else if ("modelid".equals(key)) {
+
+                                sensors.setModelid(stringJsonNodeEntry.getValue().toString());
+
+                            } else if ("state".equals(key)) {
+
+                                sensors.setState(new ObjectMapper().readValue(stringJsonNodeEntry.getValue().toString(), State.class));
+
+                            } else if ("etag".equals(key)) {
+
+                                sensors.setEtag(stringJsonNodeEntry.getValue().toString());
+
+                            }
+
+
+                        } catch (IOException e) {
+                            log.error("could not desirialize {} {}", node.toString(), e.getMessage());
+                            e.printStackTrace();
+                        }
+
                     }
+                });
 
-                }
-            });
-
-            sensorMap.put(sensor.getUniqueid(), sensor);
-
+            }
         }
 
         return sensorMap.values();
-    }
-
-    /**
-     * getSensorByUniqueId
-     * @param sensorMap
-     * @param nodeMap
-     * @return
-     */
-    private Sensors getSensorByUniqueId( Map<String, Sensors> sensorMap, Iterator<Map.Entry<String, JsonNode>> nodeMap) {
-
-       final Sensors[] currentSensor = new Sensors[1];
-
-        nodeMap.forEachRemaining(new Consumer<Map.Entry<String, JsonNode>>() {
-            @Override
-            public void accept(Map.Entry<String, JsonNode> stringJsonNodeEntry) {
-
-                String key = stringJsonNodeEntry.getKey();
-
-                if ("uniqueid".equals(key)) {
-
-                    String uniqueid = stringJsonNodeEntry.getValue().toString();
-
-                    currentSensor[0] = sensorMap.get(uniqueid);
-
-                    if (null == currentSensor[0]) {
-                        currentSensor[0] = new Sensors();
-                        sensorMap.put(uniqueid, currentSensor[0]);
-                    }
-                    currentSensor[0].setUniqueid(stringJsonNodeEntry.getValue().toString());
-
-                }
-
-            }
-
-        });
-        return currentSensor[0];
     }
 
 }
