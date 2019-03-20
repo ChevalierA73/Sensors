@@ -12,6 +12,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Component
@@ -33,11 +34,13 @@ public class SensorsApi {
 
         String result = restTemplate.getForObject(uri, String.class);
 
-        log.debug("sensors response {}", result);
+        log.info("sensors response {}", result);
 
         Collection<Sensors> sensorsList = (Collection<Sensors>) new ObjectMapper().readValue(result, Sensors.class);
 
-        log.info("received sensors {}", sensorsList);
+        log.info("received sensors number {} details {}", sensorsList.size(), sensorsList);
+
+        log.info("senor names {}", sensorsList.stream().map(s -> s.getName()).collect(Collectors.toList()));
 
     }
 

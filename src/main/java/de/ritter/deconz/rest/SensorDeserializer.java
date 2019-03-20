@@ -12,8 +12,11 @@ import de.ritter.deconz.api.State;
 import lombok.extern.slf4j.Slf4j;
 
 import java.io.IOException;
+import java.lang.reflect.InvocationTargetException;
 import java.util.*;
 import java.util.function.Consumer;
+
+import org.apache.commons.beanutils.BeanUtilsBean;
 
 @Slf4j
 public class SensorDeserializer extends StdDeserializer<Collection<Sensors>> {
@@ -29,38 +32,55 @@ public class SensorDeserializer extends StdDeserializer<Collection<Sensors>> {
     @Override
     public Collection<Sensors> deserialize(JsonParser jsonParser, DeserializationContext deserializationContext) throws IOException, JsonProcessingException {
 
-       final Map<String, Sensors> sensorMap = new HashMap<>();
+       final Hashtable<String, Sensors> sensorTable = new Hashtable<>();
 
         JsonNode node = jsonParser.getCodec().readTree(jsonParser);
 
         for (Iterator<JsonNode> it = node.elements(); it.hasNext(); ) {
 
-            JsonNode jsonNode = it.next();
-
-            String name = jsonNode.get("name").asText();
-
             if (it.hasNext()) {
 
-                Iterator<Map.Entry<String, JsonNode>> nodeMap = it.next().fields();
+                JsonNode  jsonNode = it.next();
+                final String[] etag = new String[1];
+
+                if (null != jsonNode.get("etag")) {
+                    etag[0] = jsonNode.get("etag").asText();
+                }
+
+                Iterator<Map.Entry<String, JsonNode>> nodeMap = jsonNode.fields();
 
                 nodeMap.forEachRemaining(new Consumer<Map.Entry<String, JsonNode>>() {
                     @Override
                     public void accept(Map.Entry<String, JsonNode> stringJsonNodeEntry) {
 
-                        Sensors sensors = sensorMap.get(name);
+                        Sensors sensors = sensorTable.get(etag[0]);
 
                         if (null == sensors) {
                             sensors = new Sensors();
-                            sensors.setName(name);
-                            sensorMap.put(name, sensors);
+                            sensorTable.put(etag[0], sensors);
                         }
 
                         String key = stringJsonNodeEntry.getKey();
 
                         try {
 
-                            if ("config".equals(key)) {
-                                sensors.setConfig(new ObjectMapper().readValue(stringJsonNodeEntry.getValue().toString(), Config.class));
+                            if ("name".equals(key)) {
+
+                                sensors.setName(stringJsonNodeEntry.getValue().toString());
+
+                            } else if ("config".equals(key)) {
+
+                                Config newConfig = new ObjectMapper().readValue(stringJsonNodeEntry.getValue().toString(), Config.class);
+
+                                if (null != sensors.getConfig()) {
+
+                                    nullAwareBeanCopy(sensors.getConfig(), newConfig);
+
+                                } else {
+
+                                    sensors.setConfig(newConfig);
+
+                                }
 
                             } else if ("manufacturername".equals(key)) {
 
@@ -72,16 +92,29 @@ public class SensorDeserializer extends StdDeserializer<Collection<Sensors>> {
 
                             } else if ("state".equals(key)) {
 
-                                sensors.setState(new ObjectMapper().readValue(stringJsonNodeEntry.getValue().toString(), State.class));
+                                State newState = new ObjectMapper().readValue(stringJsonNodeEntry.getValue().toString(), State.class);
+
+                                if (null != sensors.getState()) {
+
+                                    nullAwareBeanCopy(sensors.getState(), newState);
+
+                                } else {
+
+                                    sensors.setState(newState);
+
+                                }
 
                             } else if ("etag".equals(key)) {
 
                                 sensors.setEtag(stringJsonNodeEntry.getValue().toString());
 
+                            } else if ("uniqueid".equals(key)) {
+
+                                sensors.setUniqueid(stringJsonNodeEntry.getValue().toString());
+
                             }
 
-
-                        } catch (IOException e) {
+                        } catch (IOException | IllegalAccessException | InvocationTargetException e) {
                             log.error("could not desirialize {} {}", node.toString(), e.getMessage());
                             e.printStackTrace();
                         }
@@ -92,7 +125,21 @@ public class SensorDeserializer extends StdDeserializer<Collection<Sensors>> {
             }
         }
 
-        return sensorMap.values();
+        return sensorTable.values();
+    }
+
+
+
+    public static void nullAwareBeanCopy(Object dest, Object source) throws IllegalAccessException, InvocationTargetException {
+        new BeanUtilsBean() {
+            @Override
+            public void copyProperty(Object dest, String name, Object value)
+                    throws IllegalAccessException, InvocationTargetException {
+                if(value != null) {
+                    super.copyProperty(dest, name, value);
+                }
+            }
+        }.copyProperties(dest, source);
     }
 
 }
