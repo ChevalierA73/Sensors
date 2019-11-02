@@ -2,3 +2,11 @@ raspberry:
   pi: 192.168.178.39
 
   apikey: cab_outgun_peppery
+
+spring:
+  kafka:
+    producer:
+      bootstrap-servers: 192.168.178.44:9092
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.apache.kafka.common.serialization.StringSerializer
+      topicName: "sensors"
