@@ -1,5 +1,7 @@
 package de.ritter.deconz.rest;
 
+import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.extern.slf4j.Slf4j;
 import org.apache.kafka.clients.producer.KafkaProducer;
 import org.apache.kafka.clients.producer.ProducerRecord;
@@ -18,6 +20,7 @@ import org.springframework.web.client.RestTemplate;
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
+import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Future;
 
@@ -61,14 +64,21 @@ public class SensorsApi {
 
         log.info("sensors response {}", result);
 
-        sendKafkaMessage(result, kafkaProducer(), topicName);
+        ObjectMapper mapper = new ObjectMapper();
+        Map<String, String> keyValueMap = mapper.readValue(result, new TypeReference<Map<String,String>>(){});
+
+        sendKafkaMessage(keyValueMap, kafkaProducer(), topicName);
 
     }
 
-    private void sendKafkaMessage(String payload, KafkaProducer<String, String> producer, String topic)
-    {
-        final ProducerRecord<String, String> record = new ProducerRecord<>(topic, "sensors", payload);
-        Future<RecordMetadata> future = producer.send(record);
+    private void sendKafkaMessage(Map<String, String> keyValueMap, KafkaProducer<String, String> producer, String topic) {
+
+        keyValueMap.forEach((k,v)->{
+            ProducerRecord<String, String> record = new ProducerRecord<String, String>("test",k,v);
+            Future<RecordMetadata> future = producer.send(record);
+        });
+
+        producer.close();
     }
 
 }
