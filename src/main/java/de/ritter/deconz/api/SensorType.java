@@ -1,13 +1,17 @@
 package de.ritter.deconz.api;
+public enum SensorType {
 
-import lombok.Data;
+   ZHASwitch,
+   ZHALight,
+   ZHAPresence,
+   Daylight,
+   ZHATemperature,
+   ZHAHumidity,
+   ZHAPressure,
+   ZHAWater,
 
-@Data
-public class SensorType {
+   CLIPPresence,
 
-   private Integer ZHASwitch;
+   CLIPGenericStatus
 
-   private Integer ZHALight;
-
-   private Boolean ZHAPresence;
 }

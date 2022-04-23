@@ -1,56 +1,48 @@
 package de.ritter.deconz.rest;
 
-import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import de.ritter.deconz.api.Sensors;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.kafka.clients.producer.KafkaProducer;
-import org.apache.kafka.clients.producer.ProducerRecord;
-import org.apache.kafka.clients.producer.RecordMetadata;
-import org.springframework.beans.factory.annotation.Autowired;
+import org.apache.kafka.clients.producer.ProducerConfig;
+import org.apache.kafka.common.serialization.StringSerializer;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
+import org.springframework.http.ResponseEntity;
+import org.springframework.kafka.core.DefaultKafkaProducerFactory;
 import org.springframework.kafka.core.KafkaTemplate;
-import org.springframework.kafka.support.SendResult;
+import org.springframework.kafka.core.ProducerFactory;
+import org.springframework.kafka.support.serializer.JsonSerializer;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.util.concurrent.ListenableFuture;
-import org.springframework.util.concurrent.ListenableFutureCallback;
 import org.springframework.web.client.RestTemplate;
 
 import java.io.IOException;
-import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.util.HashMap;
+import java.util.Iterator;
 import java.util.Map;
-import java.util.Properties;
-import java.util.concurrent.Future;
 
 @Slf4j
 @Component
 public class SensorsApi {
-
     @Value("${raspberry.pi}")
     private String address;
 
     @Value("${raspberry.apikey}")
     private String apikey;
 
-    @Value("${spring.kafka.producer.bootstrap-servers}")
-    private String kafkaBootstrapServers;
+    @Bean
+    public ProducerFactory<String, Sensors> producerFactory() {
+        Map<String, Object> config = new HashMap<>();
+        config.put(ProducerConfig.BOOTSTRAP_SERVERS_CONFIG, "127.0.0.1:9092");
+        config.put(ProducerConfig.KEY_SERIALIZER_CLASS_CONFIG, StringSerializer.class);
+        config.put(ProducerConfig.VALUE_SERIALIZER_CLASS_CONFIG, JsonSerializer.class);
+        return new DefaultKafkaProducerFactory(config);
+    }
 
-    @Value("${spring.kafka.producer.topicName}")
-    private String topicName;
-
-    public KafkaProducer<String, String> kafkaProducer() throws UnknownHostException {
-
-        Properties config = new Properties();
-        config.put("client.id", InetAddress.getLocalHost().getHostName());
-        config.put("bootstrap.servers", kafkaBootstrapServers);
-        config.put("acks", "all");
-        config.put("key.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-        config.put("value.serializer", "org.apache.kafka.common.serialization.StringSerializer");
-
-        return new KafkaProducer<String, String>(config);
-
+    @Bean
+    public KafkaTemplate<String, Sensors> kafkaTemplate() {
+        return new KafkaTemplate<String, Sensors>(producerFactory());
     }
 
     @Scheduled(fixedRate = 300000)
@@ -58,27 +50,31 @@ public class SensorsApi {
 
         RestTemplate restTemplate = new RestTemplate();
 
-        final String uri = "http://"+address+"/api/"+apikey+"/sensors";
+        final String uri = "http://" + address + "/api/" + apikey + "/sensors";
 
-        String result = restTemplate.getForObject(uri, String.class);
-
-        log.info("sensors response {}", result);
+        ResponseEntity<String> response = restTemplate.getForEntity(uri, String.class);
 
         ObjectMapper mapper = new ObjectMapper();
-        Map<String, String> keyValueMap = mapper.readValue(result, new TypeReference<Map<String,String>>(){});
 
-        sendKafkaMessage(keyValueMap, kafkaProducer(), topicName);
+        JsonNode root = mapper.readTree(response.getBody());
 
-    }
+        Iterator<JsonNode> nodes = root.elements();
 
-    private void sendKafkaMessage(Map<String, String> keyValueMap, KafkaProducer<String, String> producer, String topic) {
+        while (nodes.hasNext()) {
 
-        keyValueMap.forEach((k,v)->{
-            ProducerRecord<String, String> record = new ProducerRecord<String, String>("test",k,v);
-            Future<RecordMetadata> future = producer.send(record);
-        });
+            String sensorStr = nodes.next().toString();
 
-        producer.close();
+            ObjectMapper sensorsMapper = new ObjectMapper();
+
+            Sensors sensors = sensorsMapper.readValue(sensorStr, Sensors.class);
+
+            kafkaTemplate().send("sensors", sensors);
+
+            log.info("Sensor {} ", sensors);
+        }
+
+        log.info("sensors response {}", nodes);
+
     }
 
 }

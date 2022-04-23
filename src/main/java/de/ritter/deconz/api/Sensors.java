@@ -1,13 +1,10 @@
 package de.ritter.deconz.api;
 
-import com.fasterxml.jackson.databind.annotation.JsonDeserialize;
-import de.ritter.deconz.rest.SensorDeserializer;
 import lombok.Data;
 
 @Data
-@JsonDeserialize(using = SensorDeserializer.class)
+//@JsonDeserialize(using = SensorDeserializer.class)
 public class Sensors {
-
 
     //The name of the sensor
     private String name;
@@ -27,6 +24,11 @@ public class Sensors {
     // The manufacturer name of the sensor. required
     private String manufacturername;
 
+    private String ep;
+
+    private String mode;
+    private String lastseen;
+
     // etag
     private String etag;
 
@@ -37,4 +39,5 @@ public class Sensors {
     //    config	Object	The config of the sensor.
     //            on - Bool - default: true
     private Config config;
+
 }
