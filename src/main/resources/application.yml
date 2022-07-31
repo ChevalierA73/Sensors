@@ -1,0 +1,12 @@
+raspberry:
+  pi: 192.168.178.59
+  apikey: 988112a4e198cc1211
+
+openweathermap:
+  apikey: a1da74049732bdb7c6e882631724adac
+
+spring:
+  data:
+    mongodb:
+      uri: mongodb+srv://sensor-writer:Gwlk2cl578WqdyrT@cluster0.nkwbq6k.mongodb.net/?retryWrites=true&w=majority
+      database: senors

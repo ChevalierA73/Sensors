@@ -3,6 +3,7 @@ package de.ritter.deconz.rest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import de.ritter.deconz.api.Sensors;
+import de.ritter.deconz.repository.SensorRepository;
 import lombok.extern.slf4j.Slf4j;
 import okhttp3.OkHttpClient;
 import okhttp3.Request;
@@ -11,8 +12,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.web.client.RestTemplateBuilder;
 import org.springframework.context.annotation.Bean;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.http.ResponseEntity;
-import org.springframework.kafka.core.KafkaTemplate;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestTemplate;
@@ -34,7 +35,10 @@ public class SensorsApi {
     private String weatherMapApiKey;
 
     @Autowired
-    private KafkaTemplate<String, String> kafkaTemplate;
+    private SensorRepository repository;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     @Bean
     public RestTemplate restTemplate(RestTemplateBuilder builder) {
@@ -64,7 +68,9 @@ public class SensorsApi {
 
             Sensors sensors = sensorsMapper.readValue(sensorStr, Sensors.class);
 
-            kafkaTemplate.send(SENSORS, sensorStr);
+            mongoTemplate.insert(sensors);
+
+            //Sensors storesSensors = repository.save(sensors);
 
             log.info("Sensor {} ", sensors);
         }
@@ -84,16 +90,6 @@ public class SensorsApi {
 
         log.info("current weather {}", weatherResponse);
 
-        kafkaTemplate.send(SENSORS, weatherResponse);
-
     }
-
-  /*  @KafkaListener(topics = SENSORS, groupId = "foo")
-    public void listenWithHeaders(
-            @Payload String message,
-            @Header(KafkaHeaders.RECEIVED_PARTITION_ID) int partition) {
-       log.info(
-                "Received Message: {} from partition: {}", message, partition);
-    }*/
 
 }

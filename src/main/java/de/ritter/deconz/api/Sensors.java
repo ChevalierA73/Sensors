@@ -1,10 +1,16 @@
 package de.ritter.deconz.api;
 
 import lombok.Data;
+import org.springframework.data.annotation.Id;
+import org.springframework.data.mongodb.core.mapping.Document;
 
 @Data
+@Document("sensors")
 //@JsonDeserialize(using = SensorDeserializer.class)
 public class Sensors {
+
+    @Id
+    private String id;
 
     //The name of the sensor
     private String name;
