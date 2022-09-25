@@ -1,6 +1,6 @@
 raspberry:
   pi: 192.168.178.59
-  apikey: 988112a4e198cc1211
+  apikey: DDD33A6FDB
 
 openweathermap:
   apikey: a1da74049732bdb7c6e882631724adac
