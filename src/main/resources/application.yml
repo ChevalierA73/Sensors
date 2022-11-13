@@ -8,5 +8,5 @@ openweathermap:
 spring:
   data:
     mongodb:
-      uri: mongodb+srv://sensor-writer:Gwlk2cl578WqdyrT@cluster0.nkwbq6k.mongodb.net/?retryWrites=true&w=majority
-      database: senors
+      uri: mongodb://sensor:gmw8z73@192.168.178.29:27017/?authSource=admin
+      database: sensordb
